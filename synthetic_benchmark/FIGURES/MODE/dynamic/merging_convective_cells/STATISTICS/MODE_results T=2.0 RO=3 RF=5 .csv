@@ -1,0 +1,29 @@
+timestamp,metric,value
+2026-06-16 14:00:47,MMI_forecast,1.0
+2026-06-16 14:00:47,MMI_observed,1.0
+2026-06-16 14:00:47,MMI,1.0
+2026-06-16 14:00:47,hits,3
+2026-06-16 14:00:47,false_alarms,0
+2026-06-16 14:00:47,misses,0
+2026-06-16 14:00:47,forecast_objects,3
+2026-06-16 14:00:47,observed_objects,3
+2026-06-16 14:00:47,forecast_mean_duration,1.6666666666666667
+2026-06-16 14:00:47,forecast_mean_area,4266.555555555556
+2026-06-16 14:00:47,observed_mean_duration,1.6666666666666667
+2026-06-16 14:00:47,observed_mean_area,536.8888888888888
+2026-06-16 14:00:47,GSS,0.6745968839237226
+2026-06-16 14:00:47,GSS_Obj-Based,1.0
+2026-06-16 14:00:47,hits_random_classic,102.0227222098463
+2026-06-16 14:00:47,hits_random_objects,0.6558682472174462
+2026-06-16 14:00:47,timestamp,2026-06-16 14:00:47
+2026-06-16 14:00:47,forecast_resolution,3km
+2026-06-16 14:00:47,observed_resolution,10km
+2026-06-16 14:00:47,threshold,2.0
+2026-06-16 14:00:47,conv_radius_forecast,5
+2026-06-16 14:00:47,conv_radius_observed,3
+2026-06-16 14:00:47,time_window,1
+2026-06-16 14:00:47,min_object_size,5
+2026-06-16 14:00:47,interest_threshold,0.5
+2026-06-16 14:00:47,grid_lat,222
+2026-06-16 14:00:47,grid_lon,444
+2026-06-16 14:00:47,time_steps,5
