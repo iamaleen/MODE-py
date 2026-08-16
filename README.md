@@ -25,28 +25,29 @@ MODE-py is developed in **Python 3.10+**. It is highly recommended to use a virt
 ## Repository Structure
 
 MODE_Verification/
-|-- config.py                  # Centralized configuration (paths, parameters, weights)
 
-|-- data_loader_.py            # Ingestion of GPM (HDF5) and WRF (NetCDF) data
+    |-- config.py                  # Centralized configuration (paths, parameters, weights)
 
-|-- preprocessor_.py           # Temporal alignment and spatial cropping
+    |-- data_loader_.py            # Ingestion of GPM (HDF5) and WRF (NetCDF) data
 
-|-- mode_verifier.py           # Core algorithmic implementation (MODE3DVerifier class)
+    |-- preprocessor_.py           # Temporal alignment and spatial cropping
 
-|-- field_visualization.py     # Geospatial plotting utilities (Cartopy/Matplotlib)
+    |-- mode_verifier.py           # Core algorithmic implementation (MODE3DVerifier class)
 
-|-- statistical_analysis.py    # Quartile analysis and temporal persistence diagnostics
+    |-- field_visualization.py     # Geospatial plotting utilities (Cartopy/Matplotlib)
 
-|-- sensitivity_analysis.py    # Parametric sweeps and heatmap generation
+    |-- statistical_analysis.py    # Quartile analysis and temporal persistence diagnostics
 
-|-- run_mode_verification.py   # Main execution pipeline
+    |-- sensitivity_analysis.py    # Parametric sweeps and heatmap generation
 
-    synthetic_benchmark/
-    |-- synthetic_generator.py     # Generation of controlled geometric/temporal perturbations
+    |-- run_mode_verification.py   # Main execution pipeline
 
-    |-- synthetic_visualization.py # Plotting tools for synthetic cases
+        synthetic_benchmark/
+            |-- synthetic_generator.py     # Generation of controlled geometric/temporal perturbations
 
-    |-- run_synthetic_benchmark.py # Execution script for the benchmark suite
+            |-- synthetic_visualization.py # Plotting tools for synthetic cases
+
+            |-- run_synthetic_benchmark.py # Execution script for the benchmark suite
 
 
 ```bash
