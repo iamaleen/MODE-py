@@ -24,7 +24,7 @@ from typing import Dict, List, Optional
 import sys
 import os
 
-# Añadir la ruta para poder importar los otros módulos
+# Add the path to allow importing the other modules
 sys.path.append(os.path.dirname(__file__))
 
 from data_loader_ import load_gpm_data, load_wrf_data
@@ -32,8 +32,12 @@ from preprocessor_ import preprocess_datasets
 from mode_verifier import MODE3DVerifier
 import config
 
+
+##-----------------------------------------------------------------------------
+## MODESensitivityAnalyzer Class for MODE-py parameter sensitivity analysis
+##-----------------------------------------------------------------------------
 class MODESensitivityAnalyzer:
-    """Standalone class for MODE parameter sensitivity analysis."""
+    """Standalone class for MODE-py parameter sensitivity analysis."""
     
     def __init__(self, verifier: Optional[MODE3DVerifier] = None, 
                  results_path: Optional[str] = None,
@@ -85,7 +89,7 @@ class MODESensitivityAnalyzer:
             self.load_fresh_data()
     
     ##-------------------------------------------------------------------------
-    ## 1. Método plot_parameter_sensitivity 
+    ## 1. plot_parameter_sensitivity method 
     ##-------------------------------------------------------------------------
     def plot_parameter_sensitivity(self, 
                                  conv_radio_range=None, 
@@ -143,7 +147,7 @@ class MODESensitivityAnalyzer:
                     # Use proportional radius for GPM
                     obs_radius = conv_radio_range['obs'][i] if i < len(conv_radio_range['obs']) else conv_radio_range['obs'][-1]
                     
-                    # Crear nueva instancia con parámetros diferentes
+                    # Create a new instance with different parameters
                     temp_verifier = MODE3DVerifier(
                         forecast=self.forecast,
                         observed=self.observed,
@@ -154,16 +158,16 @@ class MODESensitivityAnalyzer:
                         min_object_size=15
                     )
                     
-                    # Ejecutar verificación
+                    # Run verification
                     metrics = temp_verifier.run_verification(interest_threshold=0.6)
                     
-                    # Almacenar resultados en matrices
+                    # Store results in arrays
                     gss_matrix[i, j] = metrics.get('GSS', 0)
                     mmi_matrix[i, j] = metrics.get('MMI', 0)
                     objects_count[i, j] = metrics.get('forecast_objects', 0) + metrics.get('observed_objects', 0)
-                    gss_obj_based_matrix[i, j] = metrics.get('GSS_Obj-Based', 0)  # NUEVA MÉTRICA
+                    gss_obj_based_matrix[i, j] = metrics.get('GSS_Obj-Based', 0)  
                     
-                    # Guardar resultados para CSV
+                    # Save results to csv
                     result_dict = {
                         'radio_wrf': fcst_radius,
                         'radio_gpm': obs_radius,
@@ -184,47 +188,47 @@ class MODESensitivityAnalyzer:
                           f"GSS_Obj: {gss_obj_based_matrix[i, j]:.3f}, Objetos: {objects_count[i, j]}")
                     
                 except Exception as e:
-                    print(f"  ✗ Error: {e}")
+                    print(f"Error: {e}")
                     gss_matrix[i, j] = np.nan
                     mmi_matrix[i, j] = np.nan
                     objects_count[i, j] = np.nan
                     gss_obj_based_matrix[i, j] = np.nan
         
-        # Guardar resultados en CSV
+        # Save results to csv
         self._save_results_to_csv(all_results, conv_radio_range, thresholds_range)
         
-        # Crear visualización (AHORA CON 4 HEATMAPS)
-        print("\nGenerando visualizaciones...")
+        # Create visualization 
+        print("\nGenerating visualizations...")
         fig, axes = plt.subplots(2, 2, figsize=figsize)
         
-        # 1. Heatmap de GSS
+        # 1. GSS Heatmap
         im1 = axes[0, 0].imshow(gss_matrix, cmap='viridis', aspect='auto', origin='lower',
                                extent=[min(thresholds_range), max(thresholds_range), 
                                        min(conv_radio_range['fcst']), max(conv_radio_range['fcst'])])
-        axes[0, 0].set_xlabel('Umbral de Precipitación (mm/h)')
-        axes[0, 0].set_ylabel('Radio de Convolución WRF (píxeles)')
+        axes[0, 0].set_xlabel('Precipitation Threshold (mm/h)')
+        axes[0, 0].set_ylabel('WRF Convolution Radius (píxeles)')
         axes[0, 0].set_title('Gilbert Skill Score (GSS)')
         plt.colorbar(im1, ax=axes[0, 0], label='GSS')
         
-        # 2. Heatmap de MMI
+        # 2. MMI Heatmap
         im2 = axes[0, 1].imshow(mmi_matrix, cmap='plasma', aspect='auto', origin='lower',
                                extent=[min(thresholds_range), max(thresholds_range), 
                                        min(conv_radio_range['fcst']), max(conv_radio_range['fcst'])])
-        axes[0, 1].set_xlabel('Umbral de Precipitación (mm/h)')
-        axes[0, 1].set_ylabel('Radio de Convolución WRF (píxeles)')
-        axes[0, 1].set_title('Mediana del Máximo Interés (MMI)')
+        axes[0, 1].set_xlabel('Precipitation Threshold (mm/h)')
+        axes[0, 1].set_ylabel('WRF Convolution Radius (píxeles)')
+        axes[0, 1].set_title('Median of Maximum Interest (MMI)')
         plt.colorbar(im2, ax=axes[0, 1], label='MMI')
         
-        # 3. Heatmap de número de objetos
+        # 3. Heatmap of the number of objects
         im3 = axes[1, 0].imshow(objects_count, cmap='RdYlGn', aspect='auto', origin='lower',
                                extent=[min(thresholds_range), max(thresholds_range), 
                                        min(conv_radio_range['fcst']), max(conv_radio_range['fcst'])])
-        axes[1, 0].set_xlabel('Umbral de Precipitación (mm/h)')
-        axes[1, 0].set_ylabel('Radio de Convolución WRF (píxeles)')
-        axes[1, 0].set_title('Número Total de Objetos')
-        plt.colorbar(im3, ax=axes[1, 0], label='Número de Objetos')
+        axes[1, 0].set_xlabel('Precipitation Threshold (mm/h)')
+        axes[1, 0].set_ylabel('WRF Convolution Radius (píxeles)')
+        axes[1, 0].set_title('Total Number of Objects')
+        plt.colorbar(im3, ax=axes[1, 0], label='Number of Objects')
         
-        # 4. Heatmap de GSS_Obj-Based 
+        # 4. GSS_Obj-Based Heatmap 
         im4 = axes[1, 1].imshow(gss_obj_based_matrix, cmap='coolwarm', aspect='auto', origin='lower',
                                extent=[min(thresholds_range), max(thresholds_range), 
                                        min(conv_radio_range['fcst']), max(conv_radio_range['fcst'])])
@@ -233,13 +237,12 @@ class MODESensitivityAnalyzer:
         axes[1, 1].set_title('GSS Object-Based')
         plt.colorbar(im4, ax=axes[1, 1], label='GSS_Obj-Based')
         
-        plt.suptitle('Sensibilidad de Métricas MODE a Parámetros\n')
-                    #f'Radios GPM: {conv_radio_range["obs"]}', fontsize=16)
-        
+        plt.suptitle('Sensitivity of MODE-py Metrics to Parameters\n')
+
         # Guardar gráfico
-        sensitivity_path = os.path.join(config.path_statistics, "MODE_parameter_sensitivity.png")
+        sensitivity_path = os.path.join(config.path_statistics, "MODE-py_parameter_sensitivity.png")
         plt.savefig(sensitivity_path, dpi=300, bbox_inches='tight')
-        print(f"Gráfico guardado en: {sensitivity_path}")
+        print(f"Chart saved to: {sensitivity_path}")
         
         plt.tight_layout()
         plt.show()
@@ -253,22 +256,22 @@ class MODESensitivityAnalyzer:
         }
 
     ##-------------------------------------------------------------------------
-    ## 2. Método _save_results_to_csv (NUEVO)
+    ## 2._save_results_to_csv method 
     ##-------------------------------------------------------------------------
     def _save_results_to_csv(self, all_results, conv_radio_range, thresholds_range):
-        """Guarda todos los resultados en un archivo CSV"""
+        """Save all the results to a csv file."""
         
-        # Crear DataFrame con todos los resultados
+        # Create a DataFrame with all the results.
         df = pd.DataFrame(all_results)
         
-        # Encontrar mejores combinaciones
+        # Find the best combinations
         best_gss_idx = df['GSS'].idxmax()
         best_mmi_idx = df['MMI'].idxmax()
         best_gss_obj_idx = df['GSS_Obj_Based'].idxmax()
         
-        # Crear resumen de mejores parámetros
+        # Create a summary of the best parameters
         summary_data = {
-            'Métrica': ['Mejor GSS', 'Mejor MMI', 'Mejor GSS_Obj-Based'],
+            'Métrica': ['Best GSS', 'Best MMI', 'Best GSS_Obj-Based'],
             'Radio_WRF': [
                 df.loc[best_gss_idx, 'radio_wrf'],
                 df.loc[best_mmi_idx, 'radio_wrf'],
@@ -279,17 +282,17 @@ class MODESensitivityAnalyzer:
                 df.loc[best_mmi_idx, 'radio_gpm'],
                 df.loc[best_gss_obj_idx, 'radio_gpm']
             ],
-            'Umbral': [
+            'Threshold': [
                 df.loc[best_gss_idx, 'threshold'],
                 df.loc[best_mmi_idx, 'threshold'],
                 df.loc[best_gss_obj_idx, 'threshold']
             ],
-            'Valor': [
+            'Value': [
                 df.loc[best_gss_idx, 'GSS'],
                 df.loc[best_mmi_idx, 'MMI'],
                 df.loc[best_gss_obj_idx, 'GSS_Obj_Based']
             ],
-            'Total_Objetos': [
+            'Total_Objects': [
                 df.loc[best_gss_idx, 'total_objects'],
                 df.loc[best_mmi_idx, 'total_objects'],
                 df.loc[best_gss_obj_idx, 'total_objects']
@@ -298,32 +301,31 @@ class MODESensitivityAnalyzer:
         
         summary_df = pd.DataFrame(summary_data)
         
-        # Guardar archivos CSV
-        results_csv_path = os.path.join(config.path_statistics, "MODE_sensitivity_results.csv")
-        summary_csv_path = os.path.join(config.path_statistics, "MODE_best_parameters.csv")
+        # Save csv files
+        results_csv_path = os.path.join(config.path_statistics, "MODE-py_sensitivity_results.csv")
+        summary_csv_path = os.path.join(config.path_statistics, "MODE-py_best_parameters.csv")
         
         df.to_csv(results_csv_path, index=False, encoding='utf-8')
         summary_df.to_csv(summary_csv_path, index=False, encoding='utf-8')
         
-        print(f"Resultados completos guardados en: {results_csv_path}")
-        print(f"Mejores parámetros guardados en: {summary_csv_path}")
+        print(f"Full results saved to: {results_csv_path}")
+        print(f"Best parameters saved to: {summary_csv_path}")
         
-        # Mostrar resumen en consola
+        # Show summary in console
         print("\n" + "="*60)
-        print("MEJORES COMBINACIONES DE PARÁMETROS")
+        print("BEST PARAMETER COMBINATIONS")
         print("="*60)
         print(summary_df.to_string(index=False))
         print("="*60)
 
     ##-------------------------------------------------------------------------
-    ## 3. Método run_sensitivity_analysis
+    ## 3.run_sensitivity_analysis method
     ##-------------------------------------------------------------------------
     def run_sensitivity_analysis(self, 
                                conv_radio_range=None,
                                thresholds_range=None):
-        """
-        Ejecuta el análisis de sensibilidad completo
-        """
+        """Run the full sensitivity analysis."""
+
         if conv_radio_range is None:
             conv_radio_range = {
                 'fcst': [6, 8, 10, 12, 14, 16],
@@ -331,40 +333,35 @@ class MODESensitivityAnalyzer:
             }
         
         if thresholds_range is None:
-            #thresholds_range = [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0, 20.0]
-            #thresholds_range = [10.0, 15.0, 20.0]
             thresholds_range = [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0]
-        # Ejecutar análisis de sensibilidad
+
+
+        # Run sensitivity analysis
         results = self.plot_parameter_sensitivity(
             conv_radio_range=conv_radio_range,
             thresholds_range=thresholds_range
         )
         
-        print("="*60)
-        print("ANÁLISIS DE SENSIBILIDAD COMPLETADO EXITOSAMENTE!")
-        print("="*60)
+        print("Sensitivity analysis successfully completed!")
         
         return results
 
 def main():
-    """Función principal para análisis de sensibilidad independiente"""
+    """Main function for independent sensitivity analysis."""
     
     print("="*60)
-    print("ANÁLISIS DE SENSIBILIDAD MODE - EJECUCIÓN INDEPENDIENTE")
+    print("MODE-py Sensitivity Analysis")
     print("="*60)
-    print("Este script cargará los datos GPM y WRF automáticamente")
-    print("Incluye GSS_Obj-Based y guarda resultados en CSV")
-    print("="*60)
-    
+          
     try:
-        # Crear analizador - cargará datos automáticamente
+        # Create analyzer - will load data automatically
         analyzer = MODESensitivityAnalyzer()
         
-        # Ejecutar análisis completo
+        # Run full scan
         results = analyzer.run_sensitivity_analysis()
         
     except Exception as e:
-        print(f"Error ejecutando análisis de sensibilidad: {e}")
+        print(f"Error running sensitivity analysis: {e}")
 
 if __name__ == "__main__":
     main()

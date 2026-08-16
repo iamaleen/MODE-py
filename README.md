@@ -1,7 +1,7 @@
 # MODE-py: Spatio-Temporal Object-Based Verification Framework
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: XXX](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/XXX)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **MODE-py** is a modular, extensible, and reproducible Python framework for the spatio-temporal object-based verification of high-resolution precipitation forecasts. It implements the Method for Object-based Diagnostic Evaluation (MODE) with specific extensions to handle heterogeneous spatial resolutions (e.g., 3 km WRF vs. 10 km GPM IMERG) and temporal persistence analysis.
 
