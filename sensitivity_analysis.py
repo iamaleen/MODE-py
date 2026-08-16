@@ -1,7 +1,15 @@
-#!/usr/bin/env python3
-##-----------------------------------------------------------------------------
-## Análisis de Sensibilidad Independiente para MODE
-##-----------------------------------------------------------------------------
+#=============================================================================
+# sensitivity_analysis.py
+#=============================================================================
+# Parameter Sensitivity Analysis Module for MODE-py
+# This independent module evaluates the impact of user-defined parameters 
+# (e.g., convolution radii, precipitation thresholds) on verification metrics.
+# It performs parametric sweeps, generates 2D sensitivity heatmaps, and 
+# exports the optimal parameter configurations to csv files.
+#
+# Note: Can be executed standalone or integrated into the main workflow.
+#=============================================================================
+
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -13,8 +21,6 @@ import os
 import pickle
 from tqdm import tqdm
 from typing import Dict, List, Optional
-
-# Importar los módulos necesarios para cargar datos
 import sys
 import os
 
@@ -27,82 +33,72 @@ from mode_verifier import MODE3DVerifier
 import config
 
 class MODESensitivityAnalyzer:
-    """
-    Clase independiente para análisis de sensibilidad de parámetros MODE
-    Incluye GSS_Obj-Based y guarda resultados en CSV
-    """
+    """Standalone class for MODE parameter sensitivity analysis."""
     
     def __init__(self, verifier: Optional[MODE3DVerifier] = None, 
                  results_path: Optional[str] = None,
                  forecast_data: Optional = None,
                  observed_data: Optional = None):
-        """
-        Inicializa el analizador de sensibilidad de múltiples formas
-        """
+      
+
+        # Initializes the sensitivity analyzer in multiple ways
+        # Using existing MODE-py checker
         if verifier:
             self.verifier = verifier
             self.forecast = verifier.forecast
             self.observed = verifier.observed
             self.data_loaded = True
-            print("✓ Usando verificador MODE existente")
             
         elif results_path:
             self.load_verification_results(results_path)
             
+        # Using input data directly
         elif forecast_data is not None and observed_data is not None:
             self.forecast = forecast_data
             self.observed = observed_data
             self.data_loaded = True
-            print("✓ Usando datos de entrada directamente")
-            
         else:
-            print("Cargando datos GPM y WRF...")
             self.load_fresh_data()
     
     def load_fresh_data(self):
-        """Carga datos GPM y WRF frescos"""
+        """Load GPM and WRF data"""
         try:
             ds_gpm_hourly = load_gpm_data()
             ds_wrf = load_wrf_data()
             
             self.observed, self.forecast = preprocess_datasets(ds_gpm_hourly, ds_wrf)
             self.data_loaded = True
-            print("✓ Datos GPM y WRF cargados y preprocesados exitosamente")
-            
         except Exception as e:
-            raise ValueError(f"Error cargando datos: {e}")
+            raise ValueError(f"Error loading data: {e}")
     
     def load_verification_results(self, results_path: str):
-        """Carga resultados de verificación desde archivo .pkl"""
+        """Load verification results from a .pkl file."""
         try:
             with open(results_path, 'rb') as f:
                 self.verifier = pickle.load(f)
             self.forecast = self.verifier.forecast
             self.observed = self.verifier.observed
             self.data_loaded = True
-            print(f"✓ Resultados cargados desde: {results_path}")
+            
         except Exception as e:
-            print(f"Error cargando resultados .pkl: {e}")
-            print("Intentando cargar datos frescos...")
+            print(f"Error loading .pkl results: {e}")
             self.load_fresh_data()
     
     ##-------------------------------------------------------------------------
-    ## 1. Método plot_parameter_sensitivity (ACTUALIZADO CON GSS_Obj-Based)
+    ## 1. Método plot_parameter_sensitivity 
     ##-------------------------------------------------------------------------
     def plot_parameter_sensitivity(self, 
                                  conv_radio_range=None, 
                                  thresholds_range=None,
                                  figsize=(16, 12), 
                                  cmap='coolwarm'):
-        """
-        Visualiza la sensibilidad de las métricas a diferentes parámetros
-        AHORA INCLUYE GSS_Obj-Based EN EL HEATMAP 4
-        """
-        # Verificar que los datos estén cargados
+        """Visualize the sensitivity of the metrics to different parameters. """
+
+        # Verify that the data is loaded
         if not hasattr(self, 'data_loaded') or not self.data_loaded:
             self.load_fresh_data()
         
-        # Valores por defecto IDÉNTICOS al script original
+        # Default values
         if conv_radio_range is None:
             conv_radio_range = {
                 'fcst': [6, 8, 10, 12, 14, 16],
@@ -111,41 +107,40 @@ class MODESensitivityAnalyzer:
         
         if thresholds_range is None:
             #thresholds_range = [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0, 20.0]
-            thresholds_range = [10.0, 15.0, 20.0]
+            thresholds_range = [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0]
         
         print("="*60)
-        print("CALCULANDO SENSIBILIDAD A PARÁMETROS...")
+        print("CALCULATING PARAMETER SENSITIVITY...")
         print("="*60)
-        print(f"Radios WRF: {conv_radio_range['fcst']}")
-        print(f"Radios GPM: {conv_radio_range['obs']}")
-        print(f"Umbrales: {thresholds_range}")
+        print(f"WRF radii: {conv_radio_range['fcst']}")
+        print(f"GPM radii: {conv_radio_range['obs']}")
+        print(f"Thresholds: {thresholds_range}")
         
-        # Matrices para almacenar resultados (AHORA CON GSS_Obj-Based)
+        # Matrices for storing results
         n_radio = len(conv_radio_range['fcst'])
         n_thresholds = len(thresholds_range)
         
         gss_matrix = np.zeros((n_radio, n_thresholds))
         mmi_matrix = np.zeros((n_radio, n_thresholds))
         objects_count = np.zeros((n_radio, n_thresholds))
-        gss_obj_based_matrix = np.zeros((n_radio, n_thresholds))  # NUEVA MATRIZ
-        
-        # Lista para almacenar todos los resultados para CSV
+        gss_obj_based_matrix = np.zeros((n_radio, n_thresholds))  
+       
         all_results = []
         
-        # Ejecutar MODE para cada combinación de parámetros
+        # Run MODE-py for each parameter combination
         total_combinations = n_radio * n_thresholds
         current_combination = 0
         
-        print(f"\nEvaluando {total_combinations} combinaciones de parámetros...")
+        print(f"\nEvaluating {total_combinations} parameter combinations...")
         
         for i, fcst_radius in enumerate(conv_radio_range['fcst']):
             for j, threshold in enumerate(thresholds_range):
                 current_combination += 1
-                print(f"Procesando combinación {current_combination}/{total_combinations}: "
-                      f"radio_WRF={fcst_radius}, umbral={threshold}mm/h")
+                print(f"Processing combination {current_combination}/{total_combinations}: "
+                      f"WRF_radii={fcst_radius}, threshold={threshold}mm/h")
                 
                 try:
-                    # Usar radio proporcional para GPM
+                    # Use proportional radius for GPM
                     obs_radius = conv_radio_range['obs'][i] if i < len(conv_radio_range['obs']) else conv_radio_range['obs'][-1]
                     
                     # Crear nueva instancia con parámetros diferentes
@@ -185,7 +180,7 @@ class MODESensitivityAnalyzer:
                     }
                     all_results.append(result_dict)
                     
-                    print(f"  ✓ GSS: {gss_matrix[i, j]:.3f}, MMI: {mmi_matrix[i, j]:.3f}, "
+                    print(f" GSS: {gss_matrix[i, j]:.3f}, MMI: {mmi_matrix[i, j]:.3f}, "
                           f"GSS_Obj: {gss_obj_based_matrix[i, j]:.3f}, Objetos: {objects_count[i, j]}")
                     
                 except Exception as e:
@@ -244,7 +239,7 @@ class MODESensitivityAnalyzer:
         # Guardar gráfico
         sensitivity_path = os.path.join(config.path_statistics, "MODE_parameter_sensitivity.png")
         plt.savefig(sensitivity_path, dpi=300, bbox_inches='tight')
-        print(f"✓ Gráfico guardado en: {sensitivity_path}")
+        print(f"Gráfico guardado en: {sensitivity_path}")
         
         plt.tight_layout()
         plt.show()
@@ -310,8 +305,8 @@ class MODESensitivityAnalyzer:
         df.to_csv(results_csv_path, index=False, encoding='utf-8')
         summary_df.to_csv(summary_csv_path, index=False, encoding='utf-8')
         
-        print(f"✓ Resultados completos guardados en: {results_csv_path}")
-        print(f"✓ Mejores parámetros guardados en: {summary_csv_path}")
+        print(f"Resultados completos guardados en: {results_csv_path}")
+        print(f"Mejores parámetros guardados en: {summary_csv_path}")
         
         # Mostrar resumen en consola
         print("\n" + "="*60)
@@ -337,7 +332,8 @@ class MODESensitivityAnalyzer:
         
         if thresholds_range is None:
             #thresholds_range = [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0, 15.0, 20.0]
-            thresholds_range = [10.0, 15.0, 20.0]
+            #thresholds_range = [10.0, 15.0, 20.0]
+            thresholds_range = [1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 10.0]
         # Ejecutar análisis de sensibilidad
         results = self.plot_parameter_sensitivity(
             conv_radio_range=conv_radio_range,

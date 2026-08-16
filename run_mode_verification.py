@@ -1,7 +1,17 @@
-#!/usr/bin/env python3
-##-----------------------------------------------------------------------------
-## Script Principal - Verificación MODE
-##-----------------------------------------------------------------------------
+#=============================================================================
+# run_mode_verification.py
+#=============================================================================
+# Main Execution for MODE-py
+# This script orchestrates the complete verification workflow. It loads 
+# forcasted and observed data, preprocesses and aligns the datasets, executes the 
+# MODE3DVerifier, generates diagnostic visualizations, and saves the 
+# evaluation metrics to csv.
+#
+# Usage:
+#   python run_mode_verification.py                    # Run full verification
+#   python run_mode_verification.py --sensitivity      # Verification plus Sensitivity
+#   python run_mode_verification.py --sensitivity-only # Run sensitivity analysis only
+#=============================================================================
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -14,55 +24,57 @@ import config
 import pickle 
 import sys
 
+from sensitivity_analysis import MODESensitivityAnalyzer
+
 def run_sensitivity_only():
-    """Ejecuta SOLO el análisis de sensibilidad, sin verificación MODE completa"""
+    """Run only the sensitivity analysis, without full MODE-py verification."""
+
     print("="*60)
-    print("EJECUTANDO SOLO ANÁLISIS DE SENSIBILIDAD")
+    print("RUNNING SENSITIVITY ANALYSIS ONLY")
     print("="*60)
-    
-    from sensitivity_analysis import MODESensitivityAnalyzer
-    
-    # Cargar datos mínimos necesarios para sensibilidad
-    print("\n1. CARGANDO DATOS PARA SENSIBILIDAD...")
+
+    # Load minimum data required for sensitivity
+    print("\n1. Loading data for sensitivity...")
     ds_gpm_hourly = load_gpm_data()
     ds_wrf = load_wrf_data()
     ds_observed, ds_model = preprocess_datasets(ds_gpm_hourly, ds_wrf)
     
-    # Crear analizador con datos directos (más eficiente)
+    # Create analyzer with direct data
     sensitivity_analyzer = MODESensitivityAnalyzer(
         forecast_data=ds_model, 
         observed_data=ds_observed
     )
     
-    # Ejecutar análisis de sensibilidad
-    print("\n2. EJECUTANDO ANÁLISIS DE SENSIBILIDAD...")
+    # Run sensitivity analysis
+    print("\n2. Running sensitivity analysis...")
     results = sensitivity_analyzer.run_sensitivity_analysis()
       
     return results
 
 def run_full_verification():
-    """Ejecuta la verificación MODE completa (sin sensibilidad)"""
+    """Run the MODE-py verification."""
+
     print("="*60)
-    print("VERIFICACIÓN MODE COMPLETA - WRF vs GPM")
+    print("COMPLETE MODE-py VERIFICATION")
     print("="*60)
     
-    # 1. Cargar datos
-    print("\n1. CARGANDO DATOS...")
+    # Load data
+    print("\n1. Loading data...")
     ds_gpm_hourly = load_gpm_data()
     ds_wrf = load_wrf_data()
     
-    # 2. Preprocesar y alinear
-    print("\n2. PREPROCESANDO Y ALINEANDO DATOS...")
+    # Preprocess and align
+    print("\n2. Preprocessig and aligning data...")
     ds_observed, ds_model = preprocess_datasets(ds_gpm_hourly, ds_wrf)
     
-    # 3. Generar gráficos de comparación
-    print("\n3. GENERANDO GRÁFICOS DE COMPARACIÓN...")
+    # Generate comparison charts
+    print("\n3. Generating comparison charts...")
     generate_comparison_plots(ds_observed, ds_model, max_plots=25)
     
-    # 4. Ejecutar verificación MODE
-    print("\n4. EJECUTANDO VERIFICACIÓN MODE...")
+    # Run MODE-py verification
+    print("\n4. Running MODE-py...")
     
-    # Crear copia de parámetros excluyendo interest_threshold
+    # Create a copy of parameters 
     init_params = config.MODE_PARAMS.copy()
     interest_threshold = init_params.pop('interest_threshold')
     
@@ -74,71 +86,69 @@ def run_full_verification():
     
     metrics = verifier.run_verification(interest_threshold=interest_threshold)
 
-    # Guardar en CSV
+    # Save as csv
     csv_path = verifier.save_metrics_to_csv()
     
-    # 5. Mostrar resultados
-    print("\nMétricas de Evaluación MODE:")
+    # Show results
+    print("\nMODE-py Evaluation Metrics:")
     for k, v in metrics.items():
         if isinstance(v, float):
             print(f"{k:>25}: {v:.3f}")
         else:
             print(f"{k:>25}: {v}")
     
-    # 6. Visualizar resultados MODE
-    print("\n5. GENERANDO GRÁFICOS MODE...")
+    # View results
+    print("\n5. Generating MODE-py graphs...")
     for time_idx in range(min(25, len(ds_model.time))):
         verifier.plot_matched_objects(time_idx=time_idx)
     
-    # 7. Guardar resultados para análisis posterior
-    print("\n6. GUARDANDO RESULTADOS PARA ANÁLISIS ESTADÍSTICO...")
+    # Save results
+    print("\n6. Saving results...")
     results_path = config.path_statistics + 'mode_verification_results.pkl'
     with open(results_path, 'wb') as f:
         pickle.dump(verifier, f)
-    print(f"Resultados guardados en: {results_path}")
+    print(f"Results saved in: {results_path}")
     
     print("\n" + "="*60)
-    print("VERIFICACIÓN MODE COMPLETADA EXITOSAMENTE!")
+    print("MODE-py VERIFICATION SUCCESFULLY COMPLETED!")
     print("="*60)
     
     return verifier
 
 def run_verification_with_sensitivity():
-    """Ejecuta verificación MODE completa + análisis de sensibilidad"""
+    """Performs a full MODE-py verification plus sensitivity analysis."""
+
     print("="*60)
-    print("VERIFICACIÓN MODE COMPLETA + ANÁLISIS DE SENSIBILIDAD")
+    print("FULL MODE-py VERIFICATION & SENSITIVITY ANALYSIS")
     print("="*60)
     
-    # Primero ejecutar verificación completa
+    # Run a full check 
     verifier = run_full_verification()
     
-    # Luego ejecutar sensibilidad
-    print("\n7. EJECUTANDO ANÁLISIS DE SENSIBILIDAD...")
-    from sensitivity_analysis import MODESensitivityAnalyzer
+    # Run sensitivity
+    print("\n7. Running sensitivity analysis...")
+    
     
     sensitivity_analyzer = MODESensitivityAnalyzer(verifier=verifier)
     results = sensitivity_analyzer.run_sensitivity_analysis()
     
     print("\n" + "="*60)
-    print("PROCESO COMPLETO TERMINADO EXITOSAMENTE!")
+    print("ENTIRE PROCESS SUCCESSFULLY COMPLETED!")
     print("="*60)
     
     return verifier, results
 
 def main():
-    """Función principal que decide qué ejecutar basado en los argumentos"""
+    """Main function."""
     
-    # Verificar argumentos
+    # Verify arguments
     if '--sensitivity-only' in sys.argv:
-        # Modo 1: Solo sensibilidad
         return run_sensitivity_only()
     
     elif '--sensitivity' in sys.argv:
-        # Modo 2: Verificación completa + sensibilidad
         return run_verification_with_sensitivity()
     
     else:
-        # Modo 3: Solo verificación (por defecto)
         return run_full_verification()
 
 if __name__ == "__main__":
