@@ -26,18 +26,27 @@ MODE-py is developed in **Python 3.10+**. It is highly recommended to use a virt
 
 MODE_Verification/
 |-- config.py                  # Centralized configuration (paths, parameters, weights)
+
 |-- data_loader_.py            # Ingestion of GPM (HDF5) and WRF (NetCDF) data
+
 |-- preprocessor_.py           # Temporal alignment and spatial cropping
+
 |-- mode_verifier.py           # Core algorithmic implementation (MODE3DVerifier class)
+
 |-- field_visualization.py     # Geospatial plotting utilities (Cartopy/Matplotlib)
+
 |-- statistical_analysis.py    # Quartile analysis and temporal persistence diagnostics
+
 |-- sensitivity_analysis.py    # Parametric sweeps and heatmap generation
+
 |-- run_mode_verification.py   # Main execution pipeline
 
-synthetic_benchmark/
-|-- synthetic_generator.py     # Generation of controlled geometric/temporal perturbations
-|-- synthetic_visualization.py # Plotting tools for synthetic cases
-|-- run_synthetic_benchmark.py # Execution script for the benchmark suite
+    synthetic_benchmark/
+    |-- synthetic_generator.py     # Generation of controlled geometric/temporal perturbations
+
+    |-- synthetic_visualization.py # Plotting tools for synthetic cases
+
+    |-- run_synthetic_benchmark.py # Execution script for the benchmark suite
 
 
 ```bash
