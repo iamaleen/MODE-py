@@ -19,15 +19,13 @@ import argparse
 import pickle
 import xarray as xr
 
-from mode_verifier import MODE3DVerifier
-import config
-
-
 # Root path 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 sys.path.append(ROOT_DIR)
 
+from mode_verifier import MODE3DVerifier
+import config
 
 ##-----------------------------------------------------------------------------
 # ARGUMENT PARSER

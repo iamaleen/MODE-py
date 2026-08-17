@@ -21,22 +21,21 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  
 
-from mode_verifier import MODE3DVerifier
-from field_visualization import cmap
-
-
 # Paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
-
 STATIC_DIR = os.path.join(CURRENT_DIR, "synthetic_output/static")
 DYNAMIC_DIR = os.path.join(CURRENT_DIR, "synthetic_output/dynamic")
 
 FIG_DIR = os.path.join(CURRENT_DIR, "synthetic_figures")
 os.makedirs(FIG_DIR, exist_ok=True)
+
+from mode_verifier import MODE3DVerifier
+from field_visualization import cmap
+
 
 ##-----------------------------------------------------------------------------
 # CASE DEFINITIONS
