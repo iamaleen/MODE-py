@@ -2,14 +2,15 @@
 # synthetic_visualization.py
 #=============================================================================
 #
-# Visualization Utilities for Synthetic MODE Benchmark Suite
+# Visualization Utilities for Synthetic MODE-py Benchmark Suite
 #
 # Generates:
 # 1. Static Benchmark Summary
 # 2. Dynamic Benchmark Summary
-# 3. MODE Processing Pipeline Diagnostics (NEW)
+# 3. MODE-py Processing Pipeline Diagnostics
 #
 #=============================================================================
+
 
 import os
 import sys
@@ -20,20 +21,16 @@ import pickle
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors  
 
+from mode_verifier import MODE3DVerifier
+from field_visualization import cmap
 
-# CORRECCIÓN DE RUTA: Permite importar mode_verifier desde el directorio padre
+
+# Paths
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
-
-from mode_verifier import MODE3DVerifier
-from field_visualization import cmap
-
-#=============================================================================
-# DIRECTORIES
-#=============================================================================
 
 STATIC_DIR = os.path.join(CURRENT_DIR, "synthetic_output/static")
 DYNAMIC_DIR = os.path.join(CURRENT_DIR, "synthetic_output/dynamic")
@@ -41,9 +38,9 @@ DYNAMIC_DIR = os.path.join(CURRENT_DIR, "synthetic_output/dynamic")
 FIG_DIR = os.path.join(CURRENT_DIR, "synthetic_figures")
 os.makedirs(FIG_DIR, exist_ok=True)
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # CASE DEFINITIONS
-#=============================================================================
+##-----------------------------------------------------------------------------
 
 STATIC_CASES = [
     "displacement",
@@ -59,10 +56,7 @@ DYNAMIC_CASES = [
     "merging_convective_cells"
 ]
 
-#=============================================================================
-# HELPERS
-#=============================================================================
-
+# Helpers
 def load_case(case_name, case_type):
 
     if case_type == "static":
@@ -78,9 +72,9 @@ def load_case(case_name, case_type):
     return wrf, gpm
 
 
-#=============================================================================
-# STATIC SUMMARY 
-#=============================================================================
+##-----------------------------------------------------------------------------
+# plot_static_benchmark_summary 
+##-----------------------------------------------------------------------------
 
 def plot_static_benchmark_summary():
     print("\nCreating static benchmark summary...")
@@ -97,10 +91,10 @@ def plot_static_benchmark_summary():
         fcst = wrf["precipitation"].isel(time=0)
         obs = gpm["precipitation"].isel(time=0)
 
-        # Forecast como relleno
+        # Forecast as filler
         cf = ax.contourf(fcst.lon, fcst.lat, fcst, levels=15, cmap="turbo") #cmap="turbo"
 
-        # Observación como contorno
+        # Observation as contour
         ax.contour(obs.lon, obs.lat, obs, levels=[10], colors="black", linewidths=2)
 
         ax.set_title(case_name.replace("_"," ").title(), fontsize=11)
@@ -116,9 +110,9 @@ def plot_static_benchmark_summary():
 
 
 
-#=============================================================================
-# DYNAMIC SUMMARY 
-#=============================================================================
+##-----------------------------------------------------------------------------
+# plot_dynamic_benchmark_summary 
+##-----------------------------------------------------------------------------
 
 def plot_dynamic_benchmark_summary():
     print("\nCreating dynamic benchmark summary...")
@@ -160,12 +154,10 @@ def plot_dynamic_benchmark_summary():
     outfile = os.path.join(FIG_DIR, "dynamic_benchmark_suite.png")
     plt.savefig(outfile, dpi=300, bbox_inches="tight")
     plt.close()
-    print(f"Saved: {outfile}")
 
-
-#=============================================================================
+##-----------------------------------------------------------------------------
 # DYNAMIC EVOLUTION FIGURES 
-#=============================================================================
+##-----------------------------------------------------------------------------
 
 def plot_splitting_evolution():
     print("\nCreating splitting evolution...")
@@ -223,15 +215,20 @@ def plot_tropical_cyclone_evolution():
     print(f"Saved: {outfile}")
 
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # MODE PIPELINE DIAGNOSTICS 
-#=============================================================================
+##-----------------------------------------------------------------------------
+
+##-----------------------------------------------------------------------------
+## plot_thresholding_step  
+##-----------------------------------------------------------------------------
 
 def plot_thresholding_step(verifier, time_idx=0, output_dir=FIG_DIR):
-    """Muestra: Original -> Suavizado -> Binario (Umbral)"""
+    """Display: Original, Smoothed, Binary (Threshold)"""
+
     print(f"\nPlotting Thresholding Step (t={time_idx})...")
     fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-    fig.suptitle(f"MODE Pipeline: Thresholding (t={time_idx})", fontsize=14)
+    fig.suptitle(f"MODE-py Pipeline: Thresholding (t={time_idx})", fontsize=14)
     
     t_slice = time_idx
     
@@ -274,23 +271,25 @@ def plot_thresholding_step(verifier, time_idx=0, output_dir=FIG_DIR):
     plt.close()
  
 
+##-----------------------------------------------------------------------------
+## plot_object_identification_step  
+##-----------------------------------------------------------------------------
 
 def plot_object_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, color_scheme='custom'):
-    """Muestra los objetos identificados como manchas continuas de colores, con centroides e IDs."""
+    """Displays the objects identified as continuous color blobs, with centroids and IDs."""
+
     print(f"\nPlotting Object Identification Step (t={time_idx})...")
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle(f"MODE Pipeline: Object Identification (t={time_idx})", fontsize=14)
+    fig.suptitle(f"MODE-py Pipeline: Object Identification (t={time_idx})", fontsize=14)
     
     target_time = pd.Timestamp(verifier.forecast.time.isel(time=time_idx).values)
     
-    # =========================================================================
-    # FUNCIÓN AUXILIAR PARA ELEGIR LA PALETA DE COLORES
-    # =========================================================================
+    # Auxiliary function for selecting the color palette
     def get_colors(n, scheme):
         if n == 0:
             return []
         if scheme == 'custom':
-            # Paleta personalizada de alto contraste (ColorBrewer Set1 + extras)
+            # Custom high-contrast palette 
             hex_colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', 
                           '#ffff33', '#a65628', '#f781bf', '#999999', '#17becf']
             return [hex_colors[i % len(hex_colors)] for i in range(n)]
@@ -303,13 +302,11 @@ def plot_object_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, co
         elif scheme == 'Paired':
             return [plt.cm.Paired(i / max(1, min(n, 12)-1)) for i in range(n)]
         else:
-            # Fallback a cualquier colormap de matplotlib (ej. 'hsv', 'gist_rainbow')
+            # Fallback to any matplotlib colormap (e.g. 'hsv', 'gist_rainbow')
             cmap = plt.cm.get_cmap(scheme)
             return [cmap(i / max(1, n-1)) for i in range(n)]
 
-    # =========================================================================
-    # FORECAST
-    # =========================================================================
+    # Forecast
     axes[0].set_title("Forecast Objects")
     
     fcst_objs_at_t = [obj for obj in verifier.forecast_objects if target_time in obj['time_points']]
@@ -346,9 +343,7 @@ def plot_object_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, co
         axes[0].text(cy, cx, f" ID:{obj['id']}", color='black', fontsize=9, fontweight='bold',
                      bbox=dict(facecolor='white', alpha=0.9, edgecolor=colors_fcst[idx], linewidth=1.0))
 
-    # =========================================================================
-    # OBSERVED
-    # =========================================================================
+    # Observed
     axes[1].set_title("Observed Objects")
     
     obs_objs_at_t = [obj for obj in verifier.observed_objects if target_time in obj['time_points']]
@@ -397,21 +392,22 @@ def plot_object_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, co
 
 
 
+##-----------------------------------------------------------------------------
+## plot_cross_identification_step  
+##-----------------------------------------------------------------------------
+
 def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, color_scheme='custom'):
-    """
-    Muestra cruce de identificación:
-    Panel Izq: Contorno OBS + Relleno FCST
-    Panel Der: Contorno FCST + Relleno OBS
+    """Identification overlay display:
+            -Left Panel: Obs Outline and Fcst Fill
+            -Right Panel: Fcst Outline and Ons Fill
     """
     print(f"\nPlotting Cross Identification Step (t={time_idx})...")
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle(f"MODE Pipeline: Object Identification (t={time_idx})", fontsize=14)
+    fig.suptitle(f"MODE-py Pipeline: Object Identification (t={time_idx})", fontsize=14)
     
     target_time = pd.Timestamp(verifier.forecast.time.isel(time=time_idx).values)
     
-    # =========================================================================
-    # FUNCIÓN AUXILIAR PARA PALETA DE COLORES (IDÉNTICA A TU VERSIÓN)
-    # =========================================================================
+    # Auxiliary function for selecting the color palette
     def get_colors(n, scheme):
         if n == 0: return []
         if scheme == 'custom':
@@ -430,7 +426,7 @@ def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, col
             cmap = plt.cm.get_cmap(scheme)
             return [cmap(i / max(1, n-1)) for i in range(n)]
 
-    # Helper para dibujar RELLENOS CONTINUOS (tu lógica original)
+    # Drawing continuous fills
     def draw_fills(ax, objects, lons, lats, shape, colors, n_objs):
         label_grid = np.zeros(shape)
         for idx, obj in enumerate(objects):
@@ -444,7 +440,7 @@ def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, col
             norm = mcolors.BoundaryNorm(bounds, cmap.N)
             ax.contourf(lons, lats, label_grid, levels=bounds, cmap=cmap, norm=norm)
 
-    # Helper para dibujar BORDES CONTINUOS (máscara binaria + contour)
+    # Drawing continuous borders (binary mask and contour)
     def draw_contours(ax, objects, lons, lats, shape):
         binary_grid = np.zeros(shape)
         for obj in objects:
@@ -456,7 +452,7 @@ def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, col
             ax.contour(lons, lats, binary_grid, levels=[0.5, 1.5], 
                        colors='black', linewidths=1.5, alpha=0.9)
 
-    # Helper para dibujar centroides e IDs
+    # Drawing centroids and IDs
     def draw_labels(ax, objects, colors):
         for idx, obj in enumerate(objects):
             cx, cy = obj['centroid_mean_geo']
@@ -465,9 +461,7 @@ def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, col
             ax.text(cy, cx, f" ID:{obj['id']}", color='black', fontsize=9, fontweight='bold',
                     bbox=dict(facecolor='white', alpha=0.9, edgecolor=color, linewidth=1.5))
 
-    # =========================================================================
-    # PREPARACIÓN DE DATOS
-    # =========================================================================
+    # Preparing data
     fcst_objs = [obj for obj in verifier.forecast_objects if target_time in obj['time_points']]
     obs_objs  = [obj for obj in verifier.observed_objects if target_time in obj['time_points']]
     n_fcst = len(fcst_objs)
@@ -476,42 +470,27 @@ def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, col
     colors_fcst = get_colors(n_fcst, color_scheme)
     colors_obs  = get_colors(n_obs, color_scheme)
 
-    # =========================================================================
-    # PANEL 1: Contorno OBS + Relleno FCST
-    # =========================================================================
+    # Panel 1: Obs Contour and Fcst Fill
     axes[0].set_title("Forecast Objects with Observation Contour", fontsize=11)
     lons_fcst, lats_fcst = verifier.forecast.lon.values, verifier.forecast.lat.values
     
-    # 1. Relleno de PRONOSTICO (colores continuos)
+    # Pronostic Filling
     draw_fills(axes[0], fcst_objs, lons_fcst, lats_fcst, verifier.binary_fcst.isel(time=time_idx).shape, colors_fcst, n_fcst)
     
-    # 2. Contorno de OBSERVACION (línea negra continua)
+    # Observation Boundary
     draw_contours(axes[0], obs_objs, verifier.observed.lon.values, verifier.observed.lat.values, 
                   verifier.binary_obs.isel(time=time_idx).shape)
                   
-    # 3. Etiquetas (centroide + ID) para ambos
-    #draw_labels(axes[0], fcst_objs, colors_fcst)
-    #draw_labels(axes[0], obs_objs, colors_obs)
-
-    # =========================================================================
-    # PANEL 2: Contorno FCST + Relleno OBS
-    # =========================================================================
+    # Panel 2: Fcst Contour and Obs Fill
     axes[1].set_title("Observation Objects with Forecast Contour", fontsize=11)
     lons_obs, lats_obs = verifier.observed.lon.values, verifier.observed.lat.values
     
-    # 1. Relleno de OBSERVACION (colores continuos)
+    # Observation Filling
     draw_fills(axes[1], obs_objs, lons_obs, lats_obs, verifier.binary_obs.isel(time=time_idx).shape, colors_obs, n_obs)
     
-    # 2. Contorno de PRONOSTICO (línea negra continua)
+    # Pronostic Boundary
     draw_contours(axes[1], fcst_objs, lons_fcst, lats_fcst, verifier.binary_fcst.isel(time=time_idx).shape)
     
-    # 3. Etiquetas
-    #draw_labels(axes[1], obs_objs, colors_obs)
-    #draw_labels(axes[1], fcst_objs, colors_fcst)
-
-    # =========================================================================
-    # AJUSTES FINALES
-    # =========================================================================
     for ax in axes:
         ax.set_xlabel("Longitude", fontsize=10)
         ax.set_ylabel("Latitude", fontsize=10)
@@ -524,11 +503,16 @@ def plot_cross_identification_step(verifier, time_idx=0, output_dir=FIG_DIR, col
 
 
 
+##-----------------------------------------------------------------------------
+## plot_filtering_step  
+##-----------------------------------------------------------------------------
+
 def plot_filtering_step(verifier, time_idx=0, output_dir=FIG_DIR):
-    """Muestra los objetos que sobrevivieron al filtrado por tamaño mínimo."""
+    """Displays the objects that survived the minimum size filtering."""
+
     print(f"\nPlotting Filtering Step (t={time_idx})...")
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle(f"MODE Pipeline: Filtered Objects (t={time_idx})", fontsize=14)
+    fig.suptitle(f"MODE-py Pipeline: Filtered Objects (t={time_idx})", fontsize=14)
     
     target_time = pd.Timestamp(verifier.forecast.time.isel(time=time_idx).values)
     
@@ -563,12 +547,16 @@ def plot_filtering_step(verifier, time_idx=0, output_dir=FIG_DIR):
     plt.close()
 
 
+##-----------------------------------------------------------------------------
+## plot_matching_step  
+##-----------------------------------------------------------------------------
 
 def plot_matching_step(verifier, time_idx=0, output_dir=FIG_DIR):
-    """Muestra el emparejamiento espacial y la matriz de interés."""
+    """Display the spatial pairing and the matrix of interest."""
+
     print(f"\nPlotting Matching Step (t={time_idx})...")
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle(f"MODE Pipeline: Object Matching (t={time_idx})", fontsize=14)
+    fig.suptitle(f"MODE-py Pipeline: Object Matching (t={time_idx})", fontsize=14)
     
     target_time = pd.Timestamp(verifier.forecast.time.isel(time=time_idx).values)
     lons_fcst, lats_fcst = verifier.forecast.lon.values, verifier.forecast.lat.values
@@ -583,9 +571,7 @@ def plot_matching_step(verifier, time_idx=0, output_dir=FIG_DIR):
         if fcst_obj and obs_obj:
             matches_at_t.append({'forecast': fcst_obj, 'observed': obs_obj, 'interest': match['interest']})
             
-    # =========================================================================
-    # Panel 1: Spatial Matching (Campo FCST + Contorno OBS emparejado)
-    # =========================================================================
+    # Spatial Matching
     ax1 = axes[0]
     orig = verifier.forecast.isel(time=time_idx).values
     ax1.contourf(lons_fcst, lats_fcst, orig, levels=15, cmap=cmap) 
@@ -598,7 +584,7 @@ def plot_matching_step(verifier, time_idx=0, output_dir=FIG_DIR):
         fcst_c = match['forecast']['centroid_mean_geo']  # (lat, lon)
         obs_c = match['observed']['centroid_mean_geo']
         
-        # 1. Dibujar el contorno del objeto OBSERVADO emparejado sobre el campo pronosticado
+        # Draw the outline of the observed object overlaid on the forecast field.
         obs_obj = match['observed']
         obj_2d_obs = next((o for o in obs_obj['objects_2d'] if o['time'] == target_time), None)
         if obj_2d_obs is not None and 'coords_geo' in obj_2d_obs:
@@ -606,19 +592,17 @@ def plot_matching_step(verifier, time_idx=0, output_dir=FIG_DIR):
             lons_obs = coords_obs[:, 1]
             lats_obs = coords_obs[:, 0]
             
-            # Contorno del objeto observado
+            # Outline of the observed object
             ax1.plot(lons_obs, lats_obs, color=color, linewidth=2.0, alpha=0.1)
-            # Relleno muy sutil para que se note el área observada sin tapar el campo de fondo
-            #ax1.fill(lons_obs, lats_obs, color=color, alpha=0.9)
-            
-        # 2. Línea que une los centroides (vector de desplazamiento)
+
+        # Line connecting the centroids (displacement vector)
         ax1.plot([fcst_c[1], obs_c[1]], [fcst_c[0], obs_c[0]], '-', color=color, linewidth=2, alpha=0.7)
         
-        # 3. Marcadores de centroides
+        # Centroid markers
         ax1.plot(fcst_c[1], fcst_c[0], 'x', color=color, markersize=10, markeredgewidth=2) # Forecast
         ax1.plot(obs_c[1], obs_c[0], 'o', color=color, markersize=8, markeredgewidth=2)    # Observed
         
-        # 4. Etiqueta del valor de interés en el punto medio
+        # Midpoint interest value label
         mid_lon, mid_lat = (fcst_c[1] + obs_c[1]) / 2, (fcst_c[0] + obs_c[0]) / 2
         ax1.text(mid_lon, mid_lat, f"{match['interest']:.2f}", ha='center', va='center', fontsize=9, fontweight='bold',
                  bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8, edgecolor=color, linewidth=1.5))
@@ -626,9 +610,7 @@ def plot_matching_step(verifier, time_idx=0, output_dir=FIG_DIR):
     ax1.set_xlabel("Longitude")
     ax1.set_ylabel("Latitude")
     
-    # =========================================================================
-    # Panel 2: Interest Matrix Heatmap
-    # =========================================================================
+    # Interest Matrix Heatmap
     ax2 = axes[1]
     if verifier.interest_matrix is not None and verifier.interest_matrix.size > 0:
         fcst_indices = [i for i, obj in enumerate(verifier.forecast_objects) if target_time in obj['time_points']]
@@ -664,18 +646,22 @@ def plot_matching_step(verifier, time_idx=0, output_dir=FIG_DIR):
     plt.close()
 
 
+##-----------------------------------------------------------------------------
+## generate_mode_pipeline_report  
+##-----------------------------------------------------------------------------
 
 def generate_mode_pipeline_report(verifier, time_idx=0, suite="static", case_name="displacement"):
-    """Ejecuta TODAS las funciones de diagnóstico del pipeline en una carpeta específica."""
+    """Runs all diagnostic functions in a specific folder."""
+
     target_dir = os.path.join(FIG_DIR, suite, case_name)
     os.makedirs(target_dir, exist_ok=True)
     
-    print("\n" + "="*70)
-    print(f"GENERATING COMPLETE MODE PIPELINE REPORT: {suite.upper()} / {case_name.upper()}")
+    print("\n" + "="*60)
+    print(f"GENERATING COMPLETE MODE-py REPORT: {suite.upper()} / {case_name.upper()}")
     print(f"Output directory: {target_dir}")
-    print("="*70)
+    print("="*60)
     
-    # Pasos internos del algoritmo
+    # Internal steps of the algorithm
     plot_thresholding_step(verifier, time_idx, output_dir=target_dir)
     plot_object_identification_step(verifier, time_idx, output_dir=target_dir)
     plot_filtering_step(verifier, time_idx, output_dir=target_dir)
@@ -684,13 +670,12 @@ def generate_mode_pipeline_report(verifier, time_idx=0, suite="static", case_nam
    
     plot_cross_identification_step(verifier, time_idx, output_dir=target_dir)
     
-#=============================================================================
+##-----------------------------------------------------------------------------
 # MAIN
-#=============================================================================
-
+##-----------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    # 1. Generar resúmenes de benchmarks (NO requiere el verificador)
+    # Generate benchmark summaries 
     plot_static_benchmark_summary()
     plot_dynamic_benchmark_summary()
 
@@ -698,14 +683,14 @@ if __name__ == "__main__":
     plot_splitting_evolution()
     plot_merging_evolution()
 
-    # 2. Generar diagnóstico del Pipeline de MODE (REQUIERE un objeto verifier)
+    # Generate MODE-py pipeline diagnosis
     print("\nLoading verifier for pipeline diagnostics...")
     
-    # Configuración del caso a diagnosticar 
+    # Configuration of the case to be diagnosed 
     CASE_TO_TEST = "tropical_cyclone_translation"
     SUITE_TO_TEST = "dynamic"
     
-    # Ruta al archivo .pkl guardado por run_synthetic_benchmark.py
+    # Path to the .pkl file
     pkl_path = os.path.join(
         CURRENT_DIR, 
         "synthetic_benchmark_results", 
@@ -719,10 +704,10 @@ if __name__ == "__main__":
             verifier = pickle.load(f)
         print(f"Successfully loaded verifier from: {pkl_path}")
         
-        # Generar las 4 figuras del pipeline en la carpeta específica: synthetic_figures/static/multicore/
+        # Generate the 4 pipeline figures in the specific folder
         generate_mode_pipeline_report(
             verifier, 
-            time_idx=0, 
+            time_idx=21, 
             suite=SUITE_TO_TEST, 
             case_name=CASE_TO_TEST
         )
@@ -730,4 +715,4 @@ if __name__ == "__main__":
         print(f"Warning: Verifier pickle not found at {pkl_path}.")
         print("Please run the benchmark first to generate the .pkl file.")
 
-    print("\nAll benchmark figures generated successfully.\n")
+    print("\nAll benchmark figures generated successfully!\n")

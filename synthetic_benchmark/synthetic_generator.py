@@ -4,35 +4,33 @@
 # Synthetic Benchmark Dataset Generator for MODE-py
 # Generates Static Geometric and Dynamic Spatiotemporal Benchmark Suites.
 #=============================================================================
+
+
 import os
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-#=============================================================================
-# CONFIGURATION
-#=============================================================================
-# Dominio
+# Domains
 LAT_MIN = 18.0
 LAT_MAX = 24.0
 LON_MIN = -86.0
 LON_MAX = -74.0
 
-# Resoluciones
+# Resolutions
 WRF_RES_KM = 3.0
 GPM_RES_KM = 10.0
 WRF_RES_DEG = WRF_RES_KM / 111.0
 GPM_RES_DEG = GPM_RES_KM / 111.0
 
-# Directorios de salida
+# Output directories
 STATIC_OUTPUT_DIR = "synthetic_output/static"
 DYNAMIC_OUTPUT_DIR = "synthetic_output/dynamic"
 os.makedirs(STATIC_OUTPUT_DIR, exist_ok=True)
 os.makedirs(DYNAMIC_OUTPUT_DIR, exist_ok=True)
 
-# Configuración temporal
+# Temporary configuration
 STATIC_TIMES = pd.date_range("2020-08-01 00:00", periods=1, freq="1h")
-#DYNAMIC_TIMES = pd.date_range("2020-08-01 00:00", periods=24, freq="1H")
 
 DYNAMIC_TIMES_TC = pd.date_range(
     "2020-08-01 00:00",
@@ -46,9 +44,10 @@ DYNAMIC_TIMES_SPLITMERGE = pd.date_range(
     freq="1h"
 )
 
-#=============================================================================
-# GRID GENERATION & MESHGRIDS
-#=============================================================================
+##-----------------------------------------------------------------------------
+# GRID GENERATION AND MESHGRIDS
+##-----------------------------------------------------------------------------
+
 wrf_lats = np.arange(LAT_MIN, LAT_MAX, WRF_RES_DEG)
 wrf_lons = np.arange(LON_MIN, LON_MAX, WRF_RES_DEG)
 gpm_lats = np.arange(LAT_MIN, LAT_MAX, GPM_RES_DEG)
@@ -57,11 +56,13 @@ gpm_lons = np.arange(LON_MIN, LON_MAX, GPM_RES_DEG)
 X_fcst, Y_fcst = np.meshgrid(wrf_lons, wrf_lats)
 X_obs, Y_obs = np.meshgrid(gpm_lons, gpm_lats)
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # LOW-LEVEL GEOMETRY FUNCTIONS
-#=============================================================================
+##-----------------------------------------------------------------------------
+
 def create_gaussian_ellipse(X, Y, center_x, center_y, sigma_x, sigma_y, angle_deg=0, amplitude=50):
-    """Genera una elipse gaussiana rotada."""
+    """Generates a rotated Gaussian ellipse."""
+
     theta = np.deg2rad(angle_deg)
     Xc = X - center_x
     Yc = Y - center_y
@@ -73,16 +74,19 @@ def create_gaussian_ellipse(X, Y, center_x, center_y, sigma_x, sigma_y, angle_de
     return field
 
 def create_gaussian_blob(X, Y, center, sigma, amplitude=50):
-    """Genera un blob circular (caso especial de elipse)."""
+    """Generates a circular blob (a special case of an ellipse)."""
+
     return create_gaussian_ellipse(X, Y, center[0], center[1], sigma, sigma, angle_deg=0, amplitude=amplitude)
 
 def create_convective_line(X, Y, center, length_sigma, width_sigma, angle_deg, amplitude=50):
-    """Genera una línea convectiva elongada."""
+    """Generates an elongated convective line."""
+
     return create_gaussian_ellipse(X, Y, center[0], center[1], length_sigma, width_sigma, angle_deg=angle_deg, amplitude=amplitude)
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # STATIC BENCHMARKS
-#=============================================================================
+##-----------------------------------------------------------------------------
+
 def displacement_case():
     obs = create_gaussian_ellipse(X_obs, Y_obs, center_x=-78.0, center_y=20.0, sigma_x=0.50, sigma_y=0.20, angle_deg=20)
     fcst = create_gaussian_ellipse(X_fcst, Y_fcst, center_x=-76.5, center_y=20.5, sigma_x=0.50, sigma_y=0.20, angle_deg=20)
@@ -113,15 +117,16 @@ def multicore_case():
     obs = create_gaussian_ellipse(X_obs, Y_obs, center_x=-80.0, center_y=21.0, sigma_x=0.80, sigma_y=0.25)
     return obs, fcst
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # DYNAMIC BENCHMARKS
-#=============================================================================
+##-----------------------------------------------------------------------------
+
+##-----------------------------------------------------------------------------
+## tropical_cyclone_translation_case
+##-----------------------------------------------------------------------------
 
 def tropical_cyclone_translation_case(t):
-
-    """
-    Tropical cyclone with recurving trajectory and spiral rainbands.
-    """
+    """Tropical cyclone with recurving trajectory and spiral rainbands."""
 
     # ------------------------------------------------------------------
     # Observed cyclone trajectory
@@ -130,7 +135,7 @@ def tropical_cyclone_translation_case(t):
     cy_obs = 19.5 + 0.015*(t**1.5)
 
     # ------------------------------------------------------------------
-    # Forecast trajectory (slightly displaced)
+    # Forecast trajectory 
     # ------------------------------------------------------------------
     cx_fcst = cx_obs + 0.15
     cy_fcst = cy_obs + 0.10
@@ -187,14 +192,13 @@ def tropical_cyclone_translation_case(t):
         )
 
     return obs, fcst
-#=============================================================================
+
+##-----------------------------------------------------------------------------
+## splitting_convective_cell_case
+##-----------------------------------------------------------------------------
 
 def splitting_convective_cell_case(t):
-
-    """
-    Single convective cell splitting into two cells.
-    Duration: 5 timesteps.
-    """
+    """Single convective cell splitting into two cells."""
 
     stage = min(t,4)
 
@@ -300,15 +304,13 @@ def splitting_convective_cell_case(t):
         )
 
     return obs, fcst
-#=============================================================================
 
+##-----------------------------------------------------------------------------
+## merging_convective_cells_case
+##-----------------------------------------------------------------------------
 
 def merging_convective_cells_case(t):
-
-    """
-    Two convective cells merging into one.
-    Duration: 5 timesteps.
-    """
+    """Two convective cells merging into one."""
 
     stage = min(t,4)
 
@@ -416,9 +418,10 @@ def merging_convective_cells_case(t):
     return obs, fcst
 
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # CASE REGISTRY
-#=============================================================================
+##-----------------------------------------------------------------------------
+
 STATIC_CASES = {
     "displacement": displacement_case,
     "orientation": orientation_case,
@@ -436,11 +439,12 @@ DYNAMIC_CASES = {
         merging_convective_cells_case
 }
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # NETCDF WRITER
-#=============================================================================
+##-----------------------------------------------------------------------------
 def create_and_save_dataset(wrf_fields, gpm_fields, times, case_name, output_dir):
-    """Construye y exporta los datasets de NetCDF."""
+    """Builds and exports the NetCDF datasets."""
+
     wrf_ds = xr.Dataset(
         {"precipitation": (("time", "lat", "lon"), wrf_fields)},
         coords={"time": times, "lat": wrf_lats, "lon": wrf_lons}
@@ -459,40 +463,38 @@ def create_and_save_dataset(wrf_fields, gpm_fields, times, case_name, output_dir
     print(f"  WRF saved: {wrf_file}")
     print(f"  GPM saved: {gpm_file}")
 
-#=============================================================================
+##-----------------------------------------------------------------------------
 # MAIN
-#=============================================================================
+##-----------------------------------------------------------------------------
+
 if __name__ == "__main__":
-    print("\n" + "="*70)
+    print("\n" + "="*60)
     print("GENERATING STATIC BENCHMARK SUITE")
-    print("="*70)
+    print("="*60)
     
     for case_name, case_func in STATIC_CASES.items():
         print(f"\nGenerating static case: {case_name}")
         
-        # Los casos estáticos solo necesitan 1 paso de tiempo
         obs_field, fcst_field = case_func()
         
-        # Añadir ruido realista (corregido: shape > 0)
+        # Add realistic noise 
         obs_noise = np.random.gamma(shape=0.0, scale=0.0, size=obs_field.shape)
         fcst_noise = np.random.gamma(shape=0.0, scale=0.0, size=fcst_field.shape)
         
         obs_field = np.clip(obs_field + obs_noise, 0, None)
         fcst_field = np.clip(fcst_field + fcst_noise, 0, None)
         
-        # Expandir dims para que coincida con (time, lat, lon)
+        # Expand dimensions to match (time, lat, lon
         wrf_fields = np.expand_dims(fcst_field, axis=0)
         gpm_fields = np.expand_dims(obs_field, axis=0)
         
         create_and_save_dataset(wrf_fields, gpm_fields, STATIC_TIMES, case_name, STATIC_OUTPUT_DIR)
 
-    print("\n" + "="*70)
+    print("\n" + "="*60)
     print("GENERATING DYNAMIC BENCHMARK SUITE")
-    print("="*70)
-
+    print("="*60)
 
     for case_name, case_func in DYNAMIC_CASES.items():
-
         print(f"\nGenerating dynamic case: {case_name}")
 
         # ----------------------------------------------------------
@@ -557,6 +559,6 @@ if __name__ == "__main__":
             DYNAMIC_OUTPUT_DIR
         )
 
-    print("\n" + "="*70)
-    print("ALL SYNTHETIC BENCHMARK DATASETS GENERATED SUCCESSFULLY.")
-    print("="*70 + "\n")
+    print("\n" + "="*60)
+    print("All synthetic benchmark datasets generated successfully!.")
+    print("="*60 + "\n")

@@ -9,6 +9,8 @@
 #  python run_synthetic_benchmark.py --suite static --case displacement
 #  python run_synthetic_benchmark.py --suite dynamic --case splitting_storm
 #=============================================================================
+
+
 import warnings
 warnings.filterwarnings('ignore')
 import os
@@ -17,22 +19,20 @@ import argparse
 import pickle
 import xarray as xr
 
-#=============================================================================
-#ROOT PATH
-#=============================================================================
+from mode_verifier import MODE3DVerifier
+import config
+
+
+# Root path 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 sys.path.append(ROOT_DIR)
 
-#=============================================================================
-#IMPORT MODE
-#=============================================================================
-from mode_verifier import MODE3DVerifier
-import config
 
-#=============================================================================
-#ARGUMENT PARSER
-#=============================================================================
+##-----------------------------------------------------------------------------
+# ARGUMENT PARSER
+##-----------------------------------------------------------------------------
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Run MODE synthetic benchmark for a specific suite and case."
@@ -58,9 +58,10 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-#=============================================================================
-#MAIN EXECUTION
-#=============================================================================
+##-----------------------------------------------------------------------------
+# MAIN 
+##-----------------------------------------------------------------------------
+
 if __name__ == "__main__":
     args = parse_arguments()
     
@@ -76,9 +77,7 @@ if __name__ == "__main__":
     print(f"RUNNING BENCHMARK: Suite='{args.suite.upper()}', Case='{CASE_NAME}'")
     print("="*70 + "\n")
 
-    #=============================================================================
-    #LOAD NETCDF FILES
-    #=============================================================================
+    # Load NETCDF files  
     wrf_file = os.path.join(DATA_DIR, f"synthetic_wrf_{CASE_NAME}.nc")
     gpm_file = os.path.join(DATA_DIR, f"synthetic_gpm_{CASE_NAME}.nc")
     
@@ -92,55 +91,40 @@ if __name__ == "__main__":
     wrf_ds = xr.open_dataset(wrf_file)
     gpm_ds = xr.open_dataset(gpm_file)
 
-    #=============================================================================
-    #EXTRACT PRECIPITATION
-    #=============================================================================
+    # Extract precipitation
     forecast = wrf_ds["precipitation"]
     observed = gpm_ds["precipitation"]
 
-    #=============================================================================
-    #MODE PARAMETERS
-    #=============================================================================
+    # MODE-py parameters
     mode_params = config.SYNTHETIC_MODE_PARAMS.copy()
     interest_threshold = mode_params.pop("interest_threshold")
 
-    #=============================================================================
-    #INITIALIZE MODE
-    #=============================================================================
-    print("\nInitializing MODE verifier...\n")
+    # Initialize MODE-py
+    print("\nInitializing MODE-py verifier...\n")
     verifier = MODE3DVerifier(
         forecast=forecast,
         observed=observed,
         **mode_params
     )
 
-    #=============================================================================
-    #RUN VERIFICATION
-    #=============================================================================
-    print("\nRunning MODE verification...\n")
+    # Run Verification 
+    print("\nRunning MODE-py verification...\n")
     metrics = verifier.run_verification(interest_threshold=interest_threshold)
-    print("\nVerification completed.\n")
+    print("\nVerification completed!\n")
 
-    #=============================================================================
-    #PRINT METRICS
-    #=============================================================================
+    # Print metrics
     print("\n" + "="*70)
     print("BENCHMARK METRICS")
     print("="*70)
     for k, v in metrics.items():
         print(f"{k:>35}: {v}")
 
-    #=============================================================================
-    #GENERATE FIGURES
-    #=============================================================================
+    # Generate figures
     print("\nGenerating diagnostic figures...\n")
     for time_idx in range(forecast.time.size):
         verifier.plot_matched_objects(time_idx=time_idx)
 
-    #=============================================================================
-    #EXPORT METRICS & SAVE VERIFIER
-    #=============================================================================
-    # Save metrics to CSV (the internal method will handle the path, or default to current dir)
+    # Save metrics to csv 
     verifier.save_metrics_to_csv()
     
     pkl_file = os.path.join(SUITE_OUTPUT_DIR, f"benchmark_{CASE_NAME}.pkl")
@@ -149,4 +133,4 @@ if __name__ == "__main__":
         
     print(f"\nVerifier object saved: {pkl_file}")
     print(f"Results organized in: {SUITE_OUTPUT_DIR}")
-    print("\nSynthetic benchmark completed successfully.\n")
+    print("\nSynthetic benchmark completed successfully!\n")
