@@ -88,4 +88,9 @@ source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 
 
+# Environment.yml
+conda env create -f environment.yml
+conda activate mode-py
+
+
 
