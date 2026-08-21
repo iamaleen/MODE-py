@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+
+title: MODE-py
+
+message: >
+  If you use MODE-py in scientific research, please cite the associated publication.
+
+type: software
+
+authors:
+  - family-names: Arnaiz Cedeño
+    given-names: Aleen
+    orcid: "https://orcid.org/0009-0001-0734-5445"
+
+  - family-names: Sierra Lorenzo
+    given-names: Maibys
+    orcid: "https://orcid.org/0000-0003-4838-1474"
+
+license: MIT
+
+version: 1.0.0
+
+date-released: 2026-08-21
+
+repository-code: "https://github.com/iamaleen/MODE-py"
+
+keywords:
+  - Object-based verification
+  - Spatio-temporal verification 
+  - Precipitation forecasting  
+  - High resolution models  
+  - Python framework\sep
+  - Scientific software 
