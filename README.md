@@ -3,16 +3,7 @@
 <p align="center">
   <img src="mode-py-logo.png" alt="MODE-py" width="800">
 </p>
-
-<p align="center">
-  <b>Spatio-Temporal Object-Based Verification Framework</b>
-</p>
-
-<p align="center">
-  A modular, extensible, and reproducible Python framework for
-  spatio-temporal object-based verification of high-resolution
-  precipitation forecasts.
-</p>
+ 
 
 ---
 
