@@ -1,5 +1,21 @@
 # MODE-py: Spatio-Temporal Object-Based Verification Framework
 
+<p align="center">
+  <img src="mode-py-logo.png" alt="MODE-py" width="800">
+</p>
+
+<p align="center">
+  <b>Spatio-Temporal Object-Based Verification Framework</b>
+</p>
+
+<p align="center">
+  A modular, extensible, and reproducible Python framework for
+  spatio-temporal object-based verification of high-resolution
+  precipitation forecasts.
+</p>
+
+---
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.xxxxx.svg)] 
