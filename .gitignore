@@ -1,3 +1,23 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# Datos pesados y resultados
+*.nc
+*.pkl
+*.h5
+*.hdf5
+
+# Figuras generadas
+FIGURES/MODE/
+synthetic_benchmark/FIGURES/
+synthetic_benchmark/synthetic_figures/
+synthetic_benchmark/synthetic_output/
+
+# Resultados de benchmarks
+synthetic_benchmark/synthetic_benchmark_results/
+
+# Carpetas temporales
+Untitled Folder/__pycache__/
+*.pyc
+*.pyo
